@@ -28,15 +28,15 @@ const demoContent = `<!doctype html>
 
       // Event listeners
       term.onData(data => {
+        currentInput += data;
+        postMessage('DATA', { data, currentInput });
+
         if (data === '\\r') {
-          postMessage('ENTERKEY', { currentInput });
           currentInput = '';
+          postMessage('ENTERKEY', { currentInput });
         } else if (data === '\\u007f') { // Handle backspace
           currentInput = currentInput.slice(0, -1);
-        } else {
-          currentInput += data;
         }
-        postMessage('DATA', { data, currentInput });
       });
 
       term.onKey(e => {
@@ -66,6 +66,13 @@ const demoContent = `<!doctype html>
 
       term.onBell(() => {
         postMessage('BELL');
+      });
+
+      // Adding an input event listener to handle alphabet keys
+      document.addEventListener('input', (event) => {
+        const input = event.data || event.target.value;
+        currentInput += input;
+        postMessage('DATA', { data: input, currentInput });
       });
 
     </script>
