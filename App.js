@@ -17,7 +17,7 @@ const demoContent = `<!doctype html>
         disableStdin: false
       });
       term.open(document.getElementById('terminal'));
-      term.write('Hello from \x1B[1;3;31mxterm.js\x1B[0m $ ');
+      term.write('Hello from \\x1B[1;3;31mxterm.js\\x1B[0m $ ');
 
       var currentInput = '';
 
@@ -25,6 +25,10 @@ const demoContent = `<!doctype html>
       function postMessage(type, data) {
         window.ReactNativeWebView.postMessage(JSON.stringify({ type, ...data }));
       }
+      const browserInfo = navigator.userAgent;
+      const xtermVersion = Terminal.version;
+
+      postMessage('INFO', { browserInfo, xtermVersion });
 
       // Event listeners
       term.onData(data => {
@@ -68,12 +72,22 @@ const demoContent = `<!doctype html>
         postMessage('BELL');
       });
 
+      // Expose a function to simulate input
+      window.simulateInput = function(input) {
+        term.write(input);
+      };
     </script>
   </body>
 </html>`;
 
 export default function App() {
   const webViewRef = useRef(null);
+
+  const sendInputToTerminal = (input) => {
+    if (webViewRef.current) {
+      webViewRef.current.injectJavaScript(`window.simulateInput(${JSON.stringify(input)});`);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -87,8 +101,14 @@ export default function App() {
         domStorageEnabled={true}
         onMessage={(event) => {
           const message = JSON.parse(event.nativeEvent.data);
+          console.log(JSON.stringify(message, null, 2));
           switch (message.type) {
+            case 'INFO':
+              console.log('Browser Info: ', message.browserInfo);
+              console.log('xterm.js Version: ', message.xtermVersion);
+              break;
             case 'ENTERKEY':
+              sendInputToTerminal("test")
               console.log('Enter key pressed with input: ', message.currentInput);
               break;
             case 'DATA':
